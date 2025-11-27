@@ -104,7 +104,7 @@ export default function Home() {
       ingredients: menu.ingredients.join(', '),
       description: menu.description,
     });
-    setEditingId(menu.id);
+    setEditingId(menu._id);
     setView('create');
   };
 
@@ -290,7 +290,7 @@ export default function Home() {
         <div>
           <h2>All Menus</h2>
           {menus.map((menu) => (
-            <div key={menu.id} style={{ border: '1px solid #ddd', padding: '10px', marginBottom: '10px' }}>
+            <div key={menu._id} style={{ border: '1px solid #ddd', padding: '10px', marginBottom: '10px' }}>
               <h3>{menu.name}</h3>
               <p>{menu._id}</p>
               <p>{menu.category} | {menu.calories} cal | Rp{menu.price}</p>
@@ -299,7 +299,7 @@ export default function Home() {
               <button onClick={() => handleEdit(menu)} style={{ marginRight: '10px' }}>
                 Edit
               </button>
-              <button onClick={() => handleDelete(menu.id)}>
+              <button onClick={() => handleDelete(menu._id)}>
                 Delete
               </button>
             </div>
@@ -311,13 +311,13 @@ export default function Home() {
         <div>
           <h2>Search Results</h2>
           {menus.map((menu) => (
-            <div key={menu.id} style={{ border: '1px solid #ddd', padding: '10px', marginBottom: '10px' }}>
+            <div key={menu._id} style={{ border: '1px solid #ddd', padding: '10px', marginBottom: '10px' }}>
               <h3>{menu.name}</h3>
               <p>{menu.category} | {menu.calories} cal | Rp{menu.price}</p>
               <button onClick={() => handleEdit(menu)} style={{ marginRight: '10px' }}>
                 Edit
               </button>
-              <button onClick={() => handleDelete(menu.id)}>
+              <button onClick={() => handleDelete(menu._id)}>
                 Delete
               </button>
             </div>
@@ -336,7 +336,7 @@ export default function Home() {
               ) : (
                 <div>
                   {data.map((menu) => (
-                    <div key={menu.id} style={{ marginLeft: '20px', marginBottom: '10px' }}>
+                    <div key={menu._id} style={{ marginLeft: '20px', marginBottom: '10px' }}>
                       <p><strong>{menu.name}</strong> - {menu.calories} cal - Rp{menu.price}</p>
                     </div>
                   ))}
