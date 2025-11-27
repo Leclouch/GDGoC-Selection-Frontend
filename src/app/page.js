@@ -1,5 +1,5 @@
 'use client';
-// frontend/src/app/page.js
+// src/app/page.js
 import { useState, useEffect } from 'react';
 import { menuApi } from '@/lib/menuApi';
 
@@ -23,7 +23,7 @@ export default function Home() {
     setLoading(true);
     try {
       const json = await menuApi.getAllMenus();
-      setMenus(json.data);
+      setMenus(json.data || []);
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -35,7 +35,7 @@ export default function Home() {
     setLoading(true);
     try {
       const json = await menuApi.searchMenus(searchQuery);
-      setMenus(json.data);
+      setMenus(json.data || []);
       setView('search');
     } catch (err) {
       alert('Error: ' + err.message);
@@ -47,7 +47,7 @@ export default function Home() {
     setLoading(true);
     try {
       const json = await menuApi.groupByCategory(mode);
-      setGrouped(json.data);
+      setGrouped(json.data || {});
       setView('grouped');
     } catch (err) {
       alert('Error: ' + err.message);
@@ -125,7 +125,7 @@ export default function Home() {
       setLoading(true);
       try {
         const json = await menuApi.getAllMenus();
-        setMenus(json.data);
+        setMenus(json.data || []);
       } catch (err) {
         alert('Error: ' + err.message);
       }
@@ -188,14 +188,17 @@ export default function Home() {
               }
               setLoading(true);
               try {
-                const generated = await menuApi.generateMenuWithAI(formData.category);
+                // NOTE: backend should return { data: { name, category, calories, price, ingredients, description } }
+                const aiRes = await menuApi.generateMenuWithAI(formData.category);
+                const generated = aiRes.data || aiRes; // tolerate both shapes
+
                 setFormData({
-                  name: generated.name,
-                  category: generated.category,
-                  calories: generated.calories.toString(),
-                  price: generated.price.toString(),
-                  ingredients: generated.ingredients.join(', '),
-                  description: generated.description,
+                  name: generated.name || '',
+                  category: generated.category || formData.category,
+                  calories: (generated.calories || '').toString(),
+                  price: (generated.price || '').toString(),
+                  ingredients: (generated.ingredients || []).join(', '),
+                  description: generated.description || '',
                 });
                 alert('Generated! Review and submit below.');
               } catch (err) {

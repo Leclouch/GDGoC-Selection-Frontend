@@ -1,26 +1,33 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-// import GEMINI_API_KEY from '.env.local';
-// asdasdasdasd
+// src/lib/menuApi.js
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000/api/menu';
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+async function parseJsonResponse(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // include raw text for debugging
+    throw new Error(`Invalid JSON response: ${text}`);
+  }
+}
 
 export const menuApi = {
   getAllMenus: async () => {
     const res = await fetch(API_BASE);
-    return res.json();
+    if (!res.ok) throw new Error(`Failed to fetch menus: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
   searchMenus: async (query) => {
-    const res = await fetch(`${API_BASE}/search?q=${query}&page=1&per_page=20`);
-    return res.json();
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&page=1&per_page=20`);
+    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
-  groupByCategory: async (mode) => {
-    const res = await fetch(`${API_BASE}/group-by-category?mode=${mode}`);
-    return res.json();
+  groupByCategory: async (mode, per_category = 10) => {
+    const res = await fetch(`${API_BASE}/group-by-category?mode=${encodeURIComponent(mode)}&per_category=${per_category}`);
+    if (!res.ok) throw new Error(`Grouping failed: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
   createMenu: async (menuData) => {
@@ -29,43 +36,43 @@ export const menuApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(menuData),
     });
-    return res.json();
+    if (!res.ok) throw new Error(`Create failed: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
   updateMenu: async (id, menuData) => {
-    const res = await fetch(`${API_BASE}/${id}`, {
+    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(menuData),
     });
-    return res.json();
+    if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
   deleteMenu: async (id) => {
-    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-    return res.json();
+    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+    return parseJsonResponse(res);
   },
 
+  // SAFE AI generation: call your backend endpoint that runs Gemini server-side
   generateMenuWithAI: async (category) => {
-    const prompt = `Generate a single restaurant menu item in this category: "${category}". 
-    Return ONLY a valid JSON object (no markdown, no extra text) with this exact format:
-    {
-      "name": "dish name",
-      "category": "${category}",
-      "calories": number between 100-800,
-      "price": number between 5000-50000,
-      "ingredients": ["ingredient1", "ingredient2", "ingredient3"],
-      "description": "short description"
-    }`;
-
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    
-    // Parse the JSON response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Invalid response from AI');
-    
-    return JSON.parse(jsonMatch[0]);
+    const url = `${API_BASE}/generate-ai`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category }),
+    });
+    if (!res.ok) {
+      // try to parse JSON error, otherwise throw generic
+      try {
+        const errJson = await res.json();
+        throw new Error(errJson.message || JSON.stringify(errJson));
+      } catch {
+        throw new Error(`AI generation failed: ${res.status}`);
+      }
+    }
+    return res.json(); // expecting { message: "...", data: { ... } } or { data: { ... } }
   }
 };
-
